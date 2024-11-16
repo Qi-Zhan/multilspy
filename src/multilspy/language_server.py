@@ -340,7 +340,7 @@ class LanguageServer:
 
     async def request_definition(
         self, relative_file_path: str, line: int, column: int
-    ) -> List[multilspy_types.Location]:
+    ) -> List[multilspy_types.Location] | None:
         """
         Raise a [textDocument/definition](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_definition) request to the Language Server
         for the symbol at the given line and column in the given file. Wait for the response and return the result.
@@ -416,6 +416,8 @@ class LanguageServer:
                 PurePath(os.path.relpath(new_item["absolutePath"], self.repository_root_path))
             )
             ret.append(multilspy_types.Location(**new_item))
+        elif response is None:
+            ret = None
         else:
             assert False, f"Unexpected response from Language Server: {response}"
 
