@@ -27,6 +27,14 @@ class Language(str, Enum):
             case Language.TYPESCRIPT: return ".ts"
             case Language.JAVASCRIPT: return ".js"
 
+    def tree_sitter(self):
+        import tree_sitter
+        match self:
+            case Language.PYTHON:
+                import tree_sitter_python
+                return tree_sitter.Language(tree_sitter_python.language())
+            case _: raise NotImplementedError()
+
     def __str__(self) -> str:
         return self.value
 
