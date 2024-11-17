@@ -54,5 +54,5 @@ class MultilspyLogger:
 
         self.logger.log(
             level=level,
-            msg=debug_log_line.json(),
+            msg=debug_log_line.model_dump_json(),
         )

@@ -8,14 +8,13 @@ The details of Language Specific configuration are not exposed to the user.
 import asyncio
 import dataclasses
 import json
-import time
 import logging
 import os
 import pathlib
 import threading
 from contextlib import asynccontextmanager, contextmanager
 from .lsp_protocol_handler.lsp_constants import LSPConstants
-from  .lsp_protocol_handler import lsp_types as LSPTypes
+from .lsp_protocol_handler import lsp_types as LSPTypes
 
 from . import multilspy_types
 from .multilspy_logger import MultilspyLogger
@@ -101,8 +100,10 @@ class LanguageServer:
             )
             return TypeScriptLanguageServer(config, logger, repository_root_path)
         else:
-            logger.log(f"Language {config.code_language} is not supported", logging.ERROR)
-            raise MultilspyException(f"Language {config.code_language} is not supported")
+            logger.log(
+                f"Language {config.code_language} is not supported", logging.ERROR)
+            raise MultilspyException(
+                f"Language {config.code_language} is not supported")
 
     def __init__(
         self,
@@ -138,7 +139,8 @@ class LanguageServer:
         if config.trace_lsp_communication:
 
             def logging_fn(source, target, msg):
-                self.logger.log(f"LSP: {source} -> {target}: {str(msg)}", logging.DEBUG)
+                self.logger.log(
+                    f"LSP: {source} -> {target}: {str(msg)}", logging.DEBUG)
 
         else:
 
@@ -147,7 +149,8 @@ class LanguageServer:
 
         # cmd is obtained from the child classes, which provide the language specific command to start the language server
         # LanguageServerHandler provides the functionality to start the language server and communicate with it
-        self.server: LanguageServerHandler = LanguageServerHandler(process_launch_info, logger=logging_fn)
+        self.server: LanguageServerHandler = LanguageServerHandler(
+            process_launch_info, logger=logging_fn)
 
         self.language_id = language_id
         self.open_file_buffers: Dict[str, LSPFileBuffer] = {}
@@ -187,7 +190,8 @@ class LanguageServer:
             )
             raise MultilspyException("Language Server not started")
 
-        absolute_file_path = str(PurePath(self.repository_root_path, relative_file_path))
+        absolute_file_path = str(
+            PurePath(self.repository_root_path, relative_file_path))
         uri = pathlib.Path(absolute_file_path).as_uri()
 
         if uri in self.open_file_buffers:
@@ -201,7 +205,8 @@ class LanguageServer:
             contents = FileUtils.read_file(self.logger, absolute_file_path)
 
             version = 0
-            self.open_file_buffers[uri] = LSPFileBuffer(uri, contents, version, self.language_id, 1)
+            self.open_file_buffers[uri] = LSPFileBuffer(
+                uri, contents, version, self.language_id, 1)
 
             self.server.notify.did_open_text_document(
                 {
@@ -245,7 +250,8 @@ class LanguageServer:
             )
             raise MultilspyException("Language Server not started")
 
-        absolute_file_path = str(PurePath(self.repository_root_path, relative_file_path))
+        absolute_file_path = str(
+            PurePath(self.repository_root_path, relative_file_path))
         uri = pathlib.Path(absolute_file_path).as_uri()
 
         # Ensure the file is open
@@ -253,9 +259,11 @@ class LanguageServer:
 
         file_buffer = self.open_file_buffers[uri]
         file_buffer.version += 1
-        change_index = TextUtils.get_index_from_line_col(file_buffer.contents, line, column)
+        change_index = TextUtils.get_index_from_line_col(
+            file_buffer.contents, line, column)
         file_buffer.contents = (
-            file_buffer.contents[:change_index] + text_to_be_inserted + file_buffer.contents[change_index:]
+            file_buffer.contents[:change_index] +
+            text_to_be_inserted + file_buffer.contents[change_index:]
         )
         self.server.notify.did_change_text_document(
             {
@@ -274,7 +282,8 @@ class LanguageServer:
                 ],
             }
         )
-        new_l, new_c = TextUtils.get_updated_position_from_line_and_column_and_edit(line, column, text_to_be_inserted)
+        new_l, new_c = TextUtils.get_updated_position_from_line_and_column_and_edit(
+            line, column, text_to_be_inserted)
         return multilspy_types.Position(line=new_l, character=new_c)
 
     def delete_text_between_positions(
@@ -293,7 +302,8 @@ class LanguageServer:
             )
             raise MultilspyException("Language Server not started")
 
-        absolute_file_path = str(PurePath(self.repository_root_path, relative_file_path))
+        absolute_file_path = str(
+            PurePath(self.repository_root_path, relative_file_path))
         uri = pathlib.Path(absolute_file_path).as_uri()
 
         # Ensure the file is open
@@ -301,10 +311,13 @@ class LanguageServer:
 
         file_buffer = self.open_file_buffers[uri]
         file_buffer.version += 1
-        del_start_idx = TextUtils.get_index_from_line_col(file_buffer.contents, start["line"], start["character"])
-        del_end_idx = TextUtils.get_index_from_line_col(file_buffer.contents, end["line"], end["character"])
+        del_start_idx = TextUtils.get_index_from_line_col(
+            file_buffer.contents, start["line"], start["character"])
+        del_end_idx = TextUtils.get_index_from_line_col(
+            file_buffer.contents, end["line"], end["character"])
         deleted_text = file_buffer.contents[del_start_idx:del_end_idx]
-        file_buffer.contents = file_buffer.contents[:del_start_idx] + file_buffer.contents[del_end_idx:]
+        file_buffer.contents = file_buffer.contents[:del_start_idx] + \
+            file_buffer.contents[del_end_idx:]
         self.server.notify.did_change_text_document(
             {
                 LSPConstants.TEXT_DOCUMENT: {
@@ -329,7 +342,8 @@ class LanguageServer:
             )
             raise MultilspyException("Language Server not started")
 
-        absolute_file_path = str(PurePath(self.repository_root_path, relative_file_path))
+        absolute_file_path = str(
+            PurePath(self.repository_root_path, relative_file_path))
         uri = pathlib.Path(absolute_file_path).as_uri()
 
         # Ensure the file is open
@@ -337,6 +351,85 @@ class LanguageServer:
 
         file_buffer = self.open_file_buffers[uri]
         return file_buffer.contents
+
+    async def request_type_definition(
+        self, relative_file_path: str, line: int, column: int
+    ) -> List[multilspy_types.Location] | None:
+        if not self.server_started:
+            self.logger.log(
+                "find_function_definition called before Language Server started",
+                logging.ERROR,
+            )
+            raise MultilspyException("Language Server not started")
+
+        with self.open_file(relative_file_path):
+            # sending request to the language server and waiting for response
+            response = await self.server.send.definition(
+                {
+                    LSPConstants.TEXT_DOCUMENT: {
+                        LSPConstants.URI: pathlib.Path(
+                            str(PurePath(self.repository_root_path, relative_file_path))
+                        ).as_uri()
+                    },
+                    LSPConstants.POSITION: {
+                        LSPConstants.LINE: line,
+                        LSPConstants.CHARACTER: column,
+                    },
+                }
+            )
+
+        ret: List[multilspy_types.Location] = []
+        if isinstance(response, list):
+            # response is either of type Location[] or LocationLink[]
+            for item in response:
+                assert isinstance(item, dict)
+                if LSPConstants.URI in item and LSPConstants.RANGE in item:
+                    new_item: multilspy_types.Location = {}
+                    new_item.update(item)
+                    new_item["absolutePath"] = PathUtils.uri_to_path(
+                        new_item["uri"])
+                    new_item["relativePath"] = str(
+                        PurePath(os.path.relpath(
+                            new_item["absolutePath"], self.repository_root_path))
+                    )
+                    ret.append(multilspy_types.Location(new_item))
+                elif (
+                    LSPConstants.ORIGIN_SELECTION_RANGE in item
+                    and LSPConstants.TARGET_URI in item
+                    and LSPConstants.TARGET_RANGE in item
+                    and LSPConstants.TARGET_SELECTION_RANGE in item
+                ):
+                    new_item: multilspy_types.Location = {}
+                    new_item["uri"] = item[LSPConstants.TARGET_URI]
+                    new_item["absolutePath"] = PathUtils.uri_to_path(
+                        new_item["uri"])
+                    new_item["relativePath"] = str(
+                        PurePath(os.path.relpath(
+                            new_item["absolutePath"], self.repository_root_path))
+                    )
+                    new_item["range"] = item[LSPConstants.TARGET_SELECTION_RANGE]
+                    ret.append(multilspy_types.Location(**new_item))
+                else:
+                    assert False, f"Unexpected response from Language Server: {item}"
+        elif isinstance(response, dict):
+            # response is of type Location
+            assert LSPConstants.URI in response
+            assert LSPConstants.RANGE in response
+
+            new_item: multilspy_types.Location = {}
+            new_item.update(response)
+            new_item["absolutePath"] = PathUtils.uri_to_path(new_item["uri"])
+            new_item["relativePath"] = str(
+                PurePath(os.path.relpath(
+                    new_item["absolutePath"], self.repository_root_path))
+            )
+            ret.append(multilspy_types.Location(**new_item))
+        elif response is None:
+            ret = None
+        else:
+            assert False, f"Unexpected response from Language Server: {response}"
+
+        return ret
 
     async def request_definition(
         self, relative_file_path: str, line: int, column: int
@@ -383,9 +476,11 @@ class LanguageServer:
                 if LSPConstants.URI in item and LSPConstants.RANGE in item:
                     new_item: multilspy_types.Location = {}
                     new_item.update(item)
-                    new_item["absolutePath"] = PathUtils.uri_to_path(new_item["uri"])
+                    new_item["absolutePath"] = PathUtils.uri_to_path(
+                        new_item["uri"])
                     new_item["relativePath"] = str(
-                        PurePath(os.path.relpath(new_item["absolutePath"], self.repository_root_path))
+                        PurePath(os.path.relpath(
+                            new_item["absolutePath"], self.repository_root_path))
                     )
                     ret.append(multilspy_types.Location(new_item))
                 elif (
@@ -396,9 +491,11 @@ class LanguageServer:
                 ):
                     new_item: multilspy_types.Location = {}
                     new_item["uri"] = item[LSPConstants.TARGET_URI]
-                    new_item["absolutePath"] = PathUtils.uri_to_path(new_item["uri"])
+                    new_item["absolutePath"] = PathUtils.uri_to_path(
+                        new_item["uri"])
                     new_item["relativePath"] = str(
-                        PurePath(os.path.relpath(new_item["absolutePath"], self.repository_root_path))
+                        PurePath(os.path.relpath(
+                            new_item["absolutePath"], self.repository_root_path))
                     )
                     new_item["range"] = item[LSPConstants.TARGET_SELECTION_RANGE]
                     ret.append(multilspy_types.Location(**new_item))
@@ -413,7 +510,8 @@ class LanguageServer:
             new_item.update(response)
             new_item["absolutePath"] = PathUtils.uri_to_path(new_item["uri"])
             new_item["relativePath"] = str(
-                PurePath(os.path.relpath(new_item["absolutePath"], self.repository_root_path))
+                PurePath(os.path.relpath(
+                    new_item["absolutePath"], self.repository_root_path))
             )
             ret.append(multilspy_types.Location(**new_item))
         elif response is None:
@@ -467,7 +565,8 @@ class LanguageServer:
             new_item.update(item)
             new_item["absolutePath"] = PathUtils.uri_to_path(new_item["uri"])
             new_item["relativePath"] = str(
-                PurePath(os.path.relpath(new_item["absolutePath"], self.repository_root_path))
+                PurePath(os.path.relpath(
+                    new_item["absolutePath"], self.repository_root_path))
             )
             ret.append(multilspy_types.Location(**new_item))
 
@@ -488,14 +587,16 @@ class LanguageServer:
         """
         with self.open_file(relative_file_path):
             open_file_buffer = self.open_file_buffers[
-                pathlib.Path(os.path.join(self.repository_root_path, relative_file_path)).as_uri()
+                pathlib.Path(os.path.join(
+                    self.repository_root_path, relative_file_path)).as_uri()
             ]
             completion_params: LSPTypes.CompletionParams = {
                 "position": {"line": line, "character": column},
                 "textDocument": {"uri": open_file_buffer.uri},
                 "context": {"triggerKind": LSPTypes.CompletionTriggerKind.Invoked},
             }
-            response: Union[List[LSPTypes.CompletionItem], LSPTypes.CompletionList, None] = None
+            response: Union[List[LSPTypes.CompletionItem],
+                            LSPTypes.CompletionList, None] = None
 
             num_retries = 0
             while response is None or (response["isIncomplete"] and num_retries < 30):
@@ -508,7 +609,7 @@ class LanguageServer:
                 num_retries += 1
 
             # TODO: Understand how to appropriately handle `isIncomplete`
-            if response is None or (response["isIncomplete"] and not(allow_incomplete)):
+            if response is None or (response["isIncomplete"] and not (allow_incomplete)):
                 return []
 
             if "items" in response:
@@ -517,7 +618,8 @@ class LanguageServer:
             response: List[LSPTypes.CompletionItem] = response
 
             # TODO: Handle the case when the completion is a keyword
-            items = [item for item in response if item["kind"] != LSPTypes.CompletionItemKind.Keyword]
+            items = [item for item in response if item["kind"]
+                     != LSPTypes.CompletionItemKind.Keyword]
 
             completions_list: List[multilspy_types.CompletionItem] = []
 
@@ -527,7 +629,7 @@ class LanguageServer:
                 completion_item = {}
                 if "detail" in item:
                     completion_item["detail"] = item["detail"]
-                
+
                 if "label" in item:
                     completion_item["completionText"] = item["label"]
                     completion_item["kind"] = item["kind"]
@@ -551,7 +653,7 @@ class LanguageServer:
                             == item["textEdit"]["range"]["end"]["character"],
                         )
                     )
-                    
+
                     completion_item["completionText"] = item["textEdit"]["newText"]
                     completion_item["kind"] = item["kind"]
                 elif "textEdit" in item and "insert" in item["textEdit"]:
@@ -559,7 +661,8 @@ class LanguageServer:
                 else:
                     assert False
 
-                completion_item = multilspy_types.CompletionItem(**completion_item)
+                completion_item = multilspy_types.CompletionItem(
+                    **completion_item)
                 completions_list.append(completion_item)
 
             return [
@@ -584,7 +687,7 @@ class LanguageServer:
                     }
                 }
             )
-        
+
         ret: List[multilspy_types.UnifiedSymbolInformation] = []
         l_tree = None
         assert isinstance(response, list)
@@ -595,7 +698,7 @@ class LanguageServer:
 
             if LSPConstants.CHILDREN in item:
                 # TODO: l_tree should be a list of TreeRepr. Define the following function to return TreeRepr as well
-                
+
                 def visit_tree_nodes_and_build_tree_repr(tree: LSPTypes.DocumentSymbol) -> List[multilspy_types.UnifiedSymbolInformation]:
                     l: List[multilspy_types.UnifiedSymbolInformation] = []
                     children = tree['children'] if 'children' in tree else []
@@ -605,13 +708,13 @@ class LanguageServer:
                     for child in children:
                         l.extend(visit_tree_nodes_and_build_tree_repr(child))
                     return l
-                
+
                 ret.extend(visit_tree_nodes_and_build_tree_repr(item))
             else:
                 ret.append(multilspy_types.UnifiedSymbolInformation(**item))
 
         return ret, l_tree
-    
+
     async def request_hover(self, relative_file_path: str, line: int, column: int) -> Union[multilspy_types.Hover, None]:
         """
         Raise a [textDocument/hover](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover) request to the Language Server
@@ -635,13 +738,14 @@ class LanguageServer:
                     },
                 }
             )
-        
+
         if response is None:
             return None
 
         assert isinstance(response, dict)
 
         return multilspy_types.Hover(**response)
+
 
 @ensure_all_methods_implemented(LanguageServer)
 class SyncLanguageServer:
@@ -714,7 +818,7 @@ class SyncLanguageServer:
         :param relative_file_path: The relative path of the file to open.
         """
         return self.language_server.get_open_file_text(relative_file_path)
-   
+
     @contextmanager
     def start_server(self) -> Iterator["SyncLanguageServer"]:
         """
@@ -723,16 +827,19 @@ class SyncLanguageServer:
         :return: None
         """
         self.loop = asyncio.new_event_loop()
-        loop_thread = threading.Thread(target=self.loop.run_forever, daemon=True)
+        loop_thread = threading.Thread(
+            target=self.loop.run_forever, daemon=True)
         loop_thread.start()
         ctx = self.language_server.start_server()
-        asyncio.run_coroutine_threadsafe(ctx.__aenter__(), loop=self.loop).result()
+        asyncio.run_coroutine_threadsafe(
+            ctx.__aenter__(), loop=self.loop).result()
         yield self
-        asyncio.run_coroutine_threadsafe(ctx.__aexit__(None, None, None), loop=self.loop).result()
+        asyncio.run_coroutine_threadsafe(ctx.__aexit__(
+            None, None, None), loop=self.loop).result()
         self.loop.call_soon_threadsafe(self.loop.stop)
         loop_thread.join()
 
-    def request_definition(self, file_path: str, line: int, column: int) -> List[multilspy_types.Location]:
+    def request_definition(self, file_path: str, line: int, column: int) -> List[multilspy_types.Location] | None:
         """
         Raise a [textDocument/definition](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_definition) request to the Language Server
         for the symbol at the given line and column in the given file. Wait for the response and return the result.
@@ -744,7 +851,15 @@ class SyncLanguageServer:
         :return List[multilspy_types.Location]: A list of locations where the symbol is defined
         """
         result = asyncio.run_coroutine_threadsafe(
-            self.language_server.request_definition(file_path, line, column), self.loop
+            self.language_server.request_definition(
+                file_path, line, column), self.loop
+        ).result()
+        return result
+
+    def request_type_definition(self, file_path: str, line: int, column: int) -> List[multilspy_types.Location] | None:
+        result = asyncio.run_coroutine_threadsafe(
+            self.language_server.request_type_definition(
+                file_path, line, column), self.loop
         ).result()
         return result
 
@@ -760,7 +875,8 @@ class SyncLanguageServer:
         :return List[multilspy_types.Location]: A list of locations where the symbol is referenced
         """
         result = asyncio.run_coroutine_threadsafe(
-            self.language_server.request_references(file_path, line, column), self.loop
+            self.language_server.request_references(
+                file_path, line, column), self.loop
         ).result()
         return result
 
@@ -778,7 +894,8 @@ class SyncLanguageServer:
         :return List[multilspy_types.CompletionItem]: A list of completions
         """
         result = asyncio.run_coroutine_threadsafe(
-            self.language_server.request_completions(relative_file_path, line, column, allow_incomplete),
+            self.language_server.request_completions(
+                relative_file_path, line, column, allow_incomplete),
             self.loop,
         ).result()
         return result
@@ -793,7 +910,8 @@ class SyncLanguageServer:
         :return Tuple[List[multilspy_types.UnifiedSymbolInformation], Union[List[multilspy_types.TreeRepr], None]]: A list of symbols in the file, and the tree representation of the symbols
         """
         result = asyncio.run_coroutine_threadsafe(
-            self.language_server.request_document_symbols(relative_file_path), self.loop
+            self.language_server.request_document_symbols(
+                relative_file_path), self.loop
         ).result()
         return result
 
@@ -809,6 +927,7 @@ class SyncLanguageServer:
         :return None
         """
         result = asyncio.run_coroutine_threadsafe(
-            self.language_server.request_hover(relative_file_path, line, column), self.loop
+            self.language_server.request_hover(
+                relative_file_path, line, column), self.loop
         ).result()
         return result

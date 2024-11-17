@@ -5,6 +5,7 @@ Configuration parameters for Multilspy.
 from enum import Enum
 from dataclasses import dataclass
 
+
 class Language(str, Enum):
     """
     Possible languages with Multilspy.
@@ -17,8 +18,18 @@ class Language(str, Enum):
     TYPESCRIPT = "typescript"
     JAVASCRIPT = "javascript"
 
+    def extension(self) -> str:
+        match self:
+            case Language.PYTHON: return ".py"
+            case Language.CSHARP: return ".cs"
+            case Language.RUST: return ".rs"
+            case Language.JAVA: return ".java"
+            case Language.TYPESCRIPT: return ".ts"
+            case Language.JAVASCRIPT: return ".js"
+
     def __str__(self) -> str:
         return self.value
+
 
 @dataclass
 class MultilspyConfig:
@@ -35,6 +46,6 @@ class MultilspyConfig:
         """
         import inspect
         return cls(**{
-            k: v for k, v in env.items() 
+            k: v for k, v in env.items()
             if k in inspect.signature(cls).parameters
         })

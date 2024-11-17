@@ -320,6 +320,16 @@ class LspRequest:
         self, params: lsp_types.SignatureHelpParams
     ) -> Union["lsp_types.SignatureHelp", None]:
         return await self.send_request("textDocument/signatureHelp", params)
+    
+    async def type_definition(
+        self, params: lsp_types.TypeDefinitionParams
+    ) -> Union["lsp_types.Definition", List["lsp_types.LocationLink"], None]:
+        """A request to resolve the type definition location of a symbol at a given text
+        document position. The request's parameter is of type [TextDocumentPosition]
+        (#TextDocumentPosition) the response is of either type {@link Definition}
+        or a typed array of {@link DefinitionLink} or a Thenable that resolves
+        to such."""
+        return await self.send_request("textDocument/typedefinition", params)
 
     async def definition(
         self, params: lsp_types.DefinitionParams
