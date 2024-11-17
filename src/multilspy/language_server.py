@@ -174,8 +174,6 @@ class LanguageServer:
         yield self
         self.server_started = False
 
-    # TODO: Add support for more LSP features
-
     @contextmanager
     def open_file(self, relative_file_path: str) -> Iterator[None]:
         """
@@ -746,6 +744,24 @@ class LanguageServer:
 
         return multilspy_types.Hover(**response)
 
+    async def request_rename(self, relative_file_path: str, line: int, column: int, new_name: str) -> Union[LSPTypes.WorkspaceEdit, None]:
+        with self.open_file(relative_file_path):
+            response = await self.server.send.rename(
+                {
+                    LSPConstants.TEXT_DOCUMENT: {
+                        LSPConstants.URI: pathlib.Path(
+                            str(PurePath(self.repository_root_path, relative_file_path))
+                        ).as_uri()
+                    },
+                    LSPConstants.POSITION: {
+                        LSPConstants.LINE: line,
+                        LSPConstants.CHARACTER: column,
+                    },
+                    LSPConstants.NEW_NAME: new_name
+                }
+            )
+        return response
+
 
 @ensure_all_methods_implemented(LanguageServer)
 class SyncLanguageServer:
@@ -931,3 +947,9 @@ class SyncLanguageServer:
                 relative_file_path, line, column), self.loop
         ).result()
         return result
+
+    def request_rename(self, relative_file_path: str, line: int, column: int, new_name: str) -> Union[LSPTypes.WorkspaceEdit, None]:
+        return asyncio.run_coroutine_threadsafe(
+            self.language_server.request_rename(
+                relative_file_path, line, column, new_name), self.loop
+        ).result()

@@ -52,6 +52,9 @@ class LSPConstants:
     # key used to represent name of symbols
     NAME = "name"
 
+    # key used to represent new_name
+    NEW_NAME = "newName"
+
     # key used to represent the kind of symbols
     KIND = "kind"
 
